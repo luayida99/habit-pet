@@ -50,6 +50,13 @@ function migrate(saved: Partial<GameState>, now: number): GameState {
     frozenDays: saved.frozenDays ?? [],
     ownedItems: saved.ownedItems ?? [],
     achievements: saved.achievements ?? [],
+    // "Play & Discover" systems (added in v2).
+    dailyReward: saved.dailyReward ?? base.dailyReward,
+    adventure: saved.adventure ?? null,
+    discoveries: saved.discoveries ?? [],
+    arcade: saved.arcade ?? {},
+    gachaPity: saved.gachaPity ?? 0,
+    combo: saved.combo ?? base.combo,
   };
   return merged;
 }

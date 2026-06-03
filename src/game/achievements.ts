@@ -31,6 +31,14 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "devoted", name: "Devoted", icon: "💞", desc: "Pet your friend 25 times.", reward: 40, test: (s) => s.stats.petsGiven >= 25 },
   { id: "marathon", name: "Marathon", icon: "🏅", desc: "Be active 30 different days.", reward: 120, test: (s) => s.stats.activeDays.length >= 30 },
   { id: "evolved", name: "All Grown Up", icon: "🦄", desc: "Evolve your pet to its final form.", reward: 250, test: (s) => topStreak(s) >= 21 || s.longestStreakEver >= 21 },
+  // ── Play & Discover ──────────────────────────────────────────────
+  { id: "gamer", name: "Arcade Rookie", icon: "🕹️", desc: "Play 10 mini-games.", reward: 60, test: (s) => s.stats.gamesPlayed >= 10 },
+  { id: "explorer", name: "Explorer", icon: "🧭", desc: "Complete 10 adventures.", reward: 80, test: (s) => s.stats.adventuresDone >= 10 },
+  { id: "naturalist", name: "Naturalist", icon: "🔭", desc: "Collect 8 discoveries.", reward: 100, test: (s) => s.discoveries.length >= 8 },
+  { id: "curator", name: "Curator", icon: "🖼️", desc: "Collect every discovery.", reward: 300, test: (s) => s.discoveries.length >= 14 },
+  { id: "hatcher", name: "Egg Hatcher", icon: "🥚", desc: "Hatch 5 mystery eggs.", reward: 70, test: (s) => s.stats.eggsHatched >= 5 },
+  { id: "loyal", name: "Loyal Friend", icon: "📅", desc: "Reach a 7-day login streak.", reward: 120, test: (s) => s.dailyReward.streak >= 7 },
+  { id: "combo-king", name: "Combo King", icon: "⚡", desc: "Hit a ×4 habit combo.", reward: 80, test: (s) => s.combo.count >= 4 },
 ];
 
 function perfectDay(s: GameState): boolean {

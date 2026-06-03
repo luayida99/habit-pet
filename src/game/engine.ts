@@ -15,6 +15,8 @@ import {
   achievement,
 } from "./achievements";
 import {
+  COMBO_BONUS_COINS,
+  COMBO_WINDOW_MS,
   DECAY_GRACE_MINUTES,
   DECAY_PER_HOUR,
   REWARDS,
@@ -34,7 +36,12 @@ import {
   habitStreak,
   topStreak,
 } from "./selectors";
-import { shopItem } from "./shop";
+import { RARITY_META, shopItem } from "./shop";
+import { adventureDef, rollAdventureLoot, discovery } from "./adventures";
+import { canClaimDaily, nextLoginStreak, rollDailyReward } from "./dailyReward";
+import { EGG_PRICE, isHighRarity, rollGacha } from "./gacha";
+import { miniGameDef, scoreToReward } from "./minigames";
+import { defaultRng, type RNG } from "./rng";
 import type {
   GameEvent,
   GameState,
@@ -84,7 +91,21 @@ export function createInitialState(now: number = Date.now()): GameState {
     achievements: [],
     quests: rollQuests(now),
     settings: { sound: true, reducedMotion: false },
-    stats: { totalCompletions: 0, activeDays: [], petsGiven: 0, questsCompleted: 0 },
+    stats: {
+      totalCompletions: 0,
+      activeDays: [],
+      petsGiven: 0,
+      questsCompleted: 0,
+      gamesPlayed: 0,
+      adventuresDone: 0,
+      eggsHatched: 0,
+    },
+    dailyReward: { lastClaim: null, streak: 0 },
+    adventure: null,
+    discoveries: [],
+    arcade: {},
+    gachaPity: 0,
+    combo: { count: 0, lastAt: 0 },
   };
 }
 
@@ -286,10 +307,16 @@ export function toggleHabit(state: GameState, id: string, now: number = Date.now
   const updated = habits.find((h) => h.id === id)!;
   const streak = habitStreak(updated, now);
 
+  // Combo: checking habits in quick succession stacks a bonus.
+  const inWindow = now - state.combo.lastAt <= COMBO_WINDOW_MS;
+  const comboCount = inWindow ? state.combo.count + 1 : 1;
+  const comboBonus = Math.max(0, comboCount - 1) * COMBO_BONUS_COINS;
+
   let next: GameState = grant(
     {
       ...state,
       habits,
+      combo: { count: comboCount, lastAt: now },
       pet: {
         ...state.pet,
         happiness: clampMeter(state.pet.happiness + REWARDS.habitHappiness),
@@ -304,11 +331,15 @@ export function toggleHabit(state: GameState, id: string, now: number = Date.now
           : [...state.stats.activeDays, today],
       },
     },
-    REWARDS.habitCoins,
+    REWARDS.habitCoins + comboBonus,
     REWARDS.habitXp,
   );
 
   events.push(evt("coins", `${habit.emoji} ${habit.name} done! +${REWARDS.habitCoins}🪙 +${REWARDS.habitXp}xp`, "✅"));
+
+  if (comboCount >= 2) {
+    events.push(evt("combo", `Combo ×${comboCount}! +${comboBonus}🪙 bonus`, "⚡"));
+  }
 
   if (STREAK_MILESTONES.includes(streak)) {
     next = { ...next, coins: next.coins + REWARDS.streakMilestoneCoins };
@@ -431,6 +462,182 @@ export function claimQuest(state: GameState, questId: string, now: number = Date
     state: settled.state,
     events: [evt("quest", `Quest complete: ${def.name}! +${def.reward}🪙 +${def.reward}xp`, def.icon), ...settled.events],
   };
+}
+
+// ───────────────────────────────────────────────────────── daily reward
+
+export function claimDailyReward(
+  state: GameState,
+  now: number = Date.now(),
+  rng: RNG = defaultRng,
+): Transition {
+  if (!canClaimDaily(state, now)) return { state, events: [] };
+  const streak = nextLoginStreak(state, now);
+  const loot = rollDailyReward(streak, rng);
+  const next: GameState = grant(
+    {
+      ...state,
+      dailyReward: { lastClaim: dayKey(now), streak },
+      freezes: state.freezes + loot.freeze,
+    },
+    loot.coins,
+    0,
+  );
+  const msg = `Day ${loot.day} reward! +${loot.coins}🪙${loot.freeze ? ` +${loot.freeze}🧊` : ""}`;
+  const settled = settleProgression(next, now);
+  return { state: settled.state, events: [evt("chest", msg, "🎁"), ...settled.events] };
+}
+
+// ───────────────────────────────────────────────────────── adventures
+
+function formatDur(min: number): string {
+  return min < 60 ? `${min}m` : `${min / 60}h`;
+}
+
+export function startAdventure(state: GameState, defId: string, now: number = Date.now()): Transition {
+  if (state.adventure) {
+    return { state, events: [evt("info", "Your pet is already exploring!", "🧭")] };
+  }
+  const def = adventureDef(defId);
+  if (!def) return { state, events: [] };
+  if (state.pet.energy < def.energyCost) {
+    return { state, events: [evt("info", "Not enough energy — check off a habit first!", "⚡")] };
+  }
+  const next: GameState = {
+    ...state,
+    pet: { ...state.pet, energy: clampMeter(state.pet.energy - def.energyCost) },
+    adventure: { defId, startedAt: now, endsAt: now + def.durationMin * 60_000 },
+  };
+  return {
+    state: next,
+    events: [evt("adventure", `${def.name} begins! Back in ${formatDur(def.durationMin)}.`, def.icon)],
+  };
+}
+
+export function collectAdventure(
+  state: GameState,
+  now: number = Date.now(),
+  rng: RNG = defaultRng,
+): Transition {
+  const adv = state.adventure;
+  if (!adv) return { state, events: [] };
+  const def = adventureDef(adv.defId);
+  if (!def) return { state: { ...state, adventure: null }, events: [] };
+  if (now < adv.endsAt) {
+    return { state, events: [evt("info", "Still exploring… check back soon!", "⏳")] };
+  }
+
+  const loot = rollAdventureLoot(def, rng);
+  const events: GameEvent[] = [evt("adventure", `${def.name} complete! +${loot.coins}🪙 +${loot.xp}xp`, def.icon)];
+
+  let next: GameState = grant(
+    {
+      ...state,
+      adventure: null,
+      freezes: state.freezes + (loot.freeze ? 1 : 0),
+      stats: { ...state.stats, adventuresDone: state.stats.adventuresDone + 1 },
+    },
+    loot.coins,
+    loot.xp,
+  );
+
+  if (loot.freeze) events.push(evt("info", "Found a Streak Freeze! 🧊", "🧊"));
+  if (loot.discoveryId) {
+    const d = discovery(loot.discoveryId);
+    const isNew = !state.discoveries.includes(loot.discoveryId);
+    if (isNew) next = { ...next, discoveries: [...next.discoveries, loot.discoveryId] };
+    if (d) {
+      events.push(
+        evt("gacha", `${isNew ? "New discovery" : "Found again"}: ${d.name} ${d.icon}`, d.icon),
+      );
+    }
+  }
+
+  const settled = settleProgression(next, now);
+  return { state: settled.state, events: [...events, ...settled.events] };
+}
+
+// ───────────────────────────────────────────────────────── mystery egg
+
+export function hatchEgg(
+  state: GameState,
+  now: number = Date.now(),
+  rng: RNG = defaultRng,
+): Transition {
+  if (state.coins < EGG_PRICE) {
+    return { state, events: [evt("info", "Need more coins to hatch an egg.", "🥚")] };
+  }
+  const owned = new Set(state.ownedItems);
+  const result = rollGacha(owned, state.gachaPity, rng);
+  const { item } = result;
+
+  let next: GameState = {
+    ...state,
+    coins: state.coins - EGG_PRICE,
+    gachaPity: isHighRarity(item.rarity) ? 0 : state.gachaPity + 1,
+    stats: { ...state.stats, eggsHatched: state.stats.eggsHatched + 1 },
+  };
+
+  const events: GameEvent[] = [];
+  const rarityLabel = RARITY_META[item.rarity].label;
+  if (result.duplicate) {
+    next = { ...next, coins: next.coins + result.refund };
+    events.push(evt("gacha", `Duplicate ${item.name} → +${result.refund}🪙 shards`, item.icon));
+  } else {
+    next = equipItem({ ...next, ownedItems: [...next.ownedItems, item.id] }, item.id);
+    events.push(evt("gacha", `Hatched a ${rarityLabel} ${item.name}! ${item.icon}`, item.icon));
+  }
+
+  const settled = settleProgression(next, now);
+  return { state: settled.state, events: [...events, ...settled.events] };
+}
+
+// ───────────────────────────────────────────────────────── mini-games
+
+export function finishMiniGame(
+  state: GameState,
+  gameId: string,
+  score: number,
+  now: number = Date.now(),
+): Transition {
+  const def = miniGameDef(gameId);
+  if (!def) return { state, events: [] };
+  const today = dayKey(now);
+  const prev = state.arcade[gameId] ?? { highScore: 0, lastPlayed: null, coinsToday: 0 };
+  const coinsToday = prev.lastPlayed === today ? prev.coinsToday : 0;
+  const reward = scoreToReward(def, score, coinsToday);
+  const isNewHigh = score > prev.highScore;
+
+  const next: GameState = grant(
+    {
+      ...state,
+      pet: {
+        ...state.pet,
+        energy: clampMeter(state.pet.energy - def.energyCost),
+        happiness: clampMeter(state.pet.happiness + reward.happiness),
+        lastPlayedAt: now,
+      },
+      arcade: {
+        ...state.arcade,
+        [gameId]: {
+          highScore: Math.max(prev.highScore, score),
+          lastPlayed: today,
+          coinsToday: coinsToday + reward.coinsTowardCap,
+        },
+      },
+      stats: { ...state.stats, gamesPlayed: state.stats.gamesPlayed + 1 },
+    },
+    reward.coins,
+    reward.xp,
+  );
+
+  const events: GameEvent[] = [
+    evt("coins", `${def.name}: ${score} pts — +${reward.coins}🪙 +${reward.xp}xp`, def.icon),
+  ];
+  if (isNewHigh && score > 0) events.push(evt("info", "New high score! 🏆", "🏆"));
+
+  const settled = settleProgression(next, now);
+  return { state: settled.state, events: [...events, ...settled.events] };
 }
 
 export { achievement, habitBestStreak };

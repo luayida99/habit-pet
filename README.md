@@ -26,8 +26,25 @@ the shame mechanics that cause burnout:
 - **An economy.** Earn coins + XP for every check-in. Spend coins in the **Shop**
   on coat colors, hats, scenes (meadow, starry night, beach, deep space) and
   companions (butterfly, firefly).
-- **Daily quests** that rotate each day, and **15 achievements** to chase.
+- **Daily quests** that rotate each day, and **22 achievements** to chase.
 - **Stats & a contribution heatmap** so you can see how far you've come.
+
+### 🎮 Play & Discover
+
+Habits generate **energy** you spend on a whole game loop beyond checking boxes:
+
+- **Arcade** — two real mini-games you play *with* your pet: **Treat Catch**
+  (catch falling treats, dodge bombs) and **Pet Says** (Simon-style memory).
+  High scores, energy-gated, with a daily coin cap so it stays balanced.
+- **Adventures** — send your pet on timed expeditions (15 min → 4 hr) that
+  resolve in **real time even while the app is closed** and return with coins
+  and randomized **Discoveries** to collect.
+- **Daily Reward** — a 7-day login chest track; day 7 drops a Streak Freeze.
+- **Mystery Egg** — spend coins to hatch random cosmetics (with egg-exclusive
+  mythics like the shifting *Prismatic* coat and the *Aurora* scene), a pity
+  timer, and duplicate-to-coins refunds.
+- **Combos** — check several habits in quick succession for bonus coins, plus
+  confetti and a chatty, reactive pet for that extra dopamine hit.
 - **Procedural sound effects** (Web Audio, no assets) and a **reduced-motion**
   option for accessibility.
 

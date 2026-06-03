@@ -72,6 +72,35 @@ export interface GameStats {
   activeDays: DateKey[];
   petsGiven: number;
   questsCompleted: number;
+  gamesPlayed: number;
+  adventuresDone: number;
+  eggsHatched: number;
+}
+
+/** Daily-reward login streak tracking. */
+export interface DailyRewardState {
+  lastClaim: DateKey | null;
+  streak: number;
+}
+
+/** A pet expedition in progress; resolves in real time even while away. */
+export interface ActiveAdventure {
+  defId: string;
+  startedAt: number;
+  endsAt: number;
+}
+
+/** Per-mini-game records and per-day coin earnings (for the soft cap). */
+export interface ArcadeStat {
+  highScore: number;
+  lastPlayed: DateKey | null;
+  coinsToday: number;
+}
+
+/** Short-lived combo when several habits are checked in quick succession. */
+export interface ComboState {
+  count: number;
+  lastAt: number;
 }
 
 export interface GameState {
@@ -100,12 +129,36 @@ export interface GameState {
   quests: DailyQuests;
   settings: GameSettings;
   stats: GameStats;
+
+  // ── "Play & Discover" systems ──────────────────────────────────
+  dailyReward: DailyRewardState;
+  adventure: ActiveAdventure | null;
+  /** Collected discovery ids (from adventures). */
+  discoveries: string[];
+  /** Per-game stats keyed by mini-game id. */
+  arcade: Record<string, ArcadeStat>;
+  /** Hatches since the last epic+ pull, for the gacha pity timer. */
+  gachaPity: number;
+  /** Transient habit-combo tracker. */
+  combo: ComboState;
 }
 
 /** A user-visible event produced by the engine, surfaced as a toast. */
 export interface GameEvent {
   id: string;
-  kind: "coins" | "xp" | "levelup" | "evolve" | "achievement" | "quest" | "streak" | "info";
+  kind:
+    | "coins"
+    | "xp"
+    | "levelup"
+    | "evolve"
+    | "achievement"
+    | "quest"
+    | "streak"
+    | "info"
+    | "chest"
+    | "adventure"
+    | "gacha"
+    | "combo";
   message: string;
   icon?: string;
 }

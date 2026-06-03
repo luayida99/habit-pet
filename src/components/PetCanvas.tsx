@@ -58,6 +58,21 @@ function desaturate(hex: string, amount: number): string {
   const m = (c: number) => Math.round(c + (gray - c) * amount);
   return `rgb(${m(r)},${m(g)},${m(b)})`;
 }
+function hslToHex(h: number, s: number, l: number): string {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const hp = (((h % 360) + 360) % 360) / 60;
+  const x = c * (1 - Math.abs((hp % 2) - 1));
+  let r = 0, g = 0, b = 0;
+  if (hp < 1) [r, g, b] = [c, x, 0];
+  else if (hp < 2) [r, g, b] = [x, c, 0];
+  else if (hp < 3) [r, g, b] = [0, c, x];
+  else if (hp < 4) [r, g, b] = [0, x, c];
+  else if (hp < 5) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  const m = l - c / 2;
+  const to = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
 
 // silhouette dimensions per evolution stage
 const STAGE = {
@@ -160,7 +175,10 @@ export function PetCanvas(props: Props) {
     if (squash.current > 0) squash.current = Math.max(0, squash.current - dt * 3);
 
     const base = SPECIES[p.species];
-    let coat = p.equipped.color ?? base.body;
+    let coat =
+      p.equipped.color === "rainbow"
+        ? hslToHex((t * 40) % 360, 0.72, 0.68)
+        : p.equipped.color ?? base.body;
     // neglected pets lose a little color
     const dullness = (1 - p.vitality) * 0.45;
     if (dullness > 0.02) coat = desaturate(coat, dullness);
@@ -202,10 +220,11 @@ export function PetCanvas(props: Props) {
 
   function drawBackground(ctx: CanvasRenderingContext2D, p: Props, t: number, rm: boolean) {
     const bg = p.equipped.background;
+    const dark = bg === "night" || bg === "space" || bg === "aurora";
     const g = ctx.createLinearGradient(0, 0, 0, LOGICAL);
-    if (bg === "night" || bg === "space") {
-      g.addColorStop(0, bg === "space" ? "#160d2e" : "#1b2a5a");
-      g.addColorStop(1, bg === "space" ? "#2a0f47" : "#0d1430");
+    if (dark) {
+      g.addColorStop(0, bg === "space" ? "#160d2e" : bg === "aurora" ? "#0a1530" : "#1b2a5a");
+      g.addColorStop(1, bg === "space" ? "#2a0f47" : bg === "aurora" ? "#0f2240" : "#0d1430");
     } else if (bg === "beach") {
       g.addColorStop(0, "#aee7ff");
       g.addColorStop(1, "#ffe8b8");
@@ -219,7 +238,28 @@ export function PetCanvas(props: Props) {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, LOGICAL, LOGICAL);
 
-    if (bg === "night" || bg === "space") {
+    if (bg === "aurora") {
+      // shimmering aurora bands
+      for (let b = 0; b < 3; b++) {
+        ctx.save();
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = ["#5cffb0", "#7c5cff", "#4bd5ff"][b];
+        ctx.beginPath();
+        const baseY = 70 + b * 26;
+        ctx.moveTo(0, baseY);
+        for (let x = 0; x <= LOGICAL; x += 16) {
+          const wob = rm ? 0 : Math.sin(x / 60 + t * (1 + b * 0.3) + b) * 18;
+          ctx.lineTo(x, baseY + wob);
+        }
+        ctx.lineTo(LOGICAL, baseY + 40);
+        ctx.lineTo(0, baseY + 40);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    if (dark) {
       for (let i = 0; i < 40; i++) {
         const x = (i * 53) % LOGICAL;
         const y = (i * 97) % 230;
@@ -263,7 +303,7 @@ export function PetCanvas(props: Props) {
     } else if (bg === "meadow") {
       ctx.fillStyle = "#9be08a";
       ctx.fillRect(0, 248, LOGICAL, LOGICAL - 248);
-    } else if (bg === "night" || bg === "space") {
+    } else if (dark) {
       ctx.fillStyle = bg === "space" ? "rgba(255,255,255,0.06)" : "#10203f";
       ctx.fillRect(0, 256, LOGICAL, LOGICAL - 256);
     } else {
@@ -662,6 +702,45 @@ export function PetCanvas(props: Props) {
         for (const [sx, sy] of [[-6, -20], [8, -34], [-2, -6]] as const) star(ctx, sx, sy, 4);
         break;
       }
+      case "halo": {
+        ctx.strokeStyle = "#ffe27a";
+        ctx.lineWidth = 5;
+        ctx.shadowColor = "#ffe27a";
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.ellipse(0, -14, 22, 8, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        break;
+      }
+      case "horns": {
+        ctx.fillStyle = "#e0556b";
+        for (const dir of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(dir * 12, 6);
+          ctx.quadraticCurveTo(dir * 26, -8, dir * 18, -22);
+          ctx.quadraticCurveTo(dir * 12, -8, dir * 4, 4);
+          ctx.closePath();
+          ctx.fill();
+        }
+        break;
+      }
+      case "flower": {
+        for (const [fx, fy, col] of [[-16, -2, "#ff8fc4"], [0, -8, "#ffd34d"], [16, -2, "#b388ff"], [-8, 2, "#7ed957"], [10, 2, "#ff8a5c"]] as const) {
+          ctx.fillStyle = col;
+          for (let k = 0; k < 5; k++) {
+            const a = (k / 5) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.ellipse(fx + Math.cos(a) * 4, fy + Math.sin(a) * 4, 3.4, 2.4, a, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.fillStyle = "#fff6d6";
+          ctx.beginPath();
+          ctx.arc(fx, fy, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
     }
     ctx.restore();
     void w;
@@ -699,6 +778,32 @@ export function PetCanvas(props: Props) {
       ctx.beginPath();
       ctx.arc(x, y, 4, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
+    } else if (c === "ghost") {
+      const bob = rm ? 0 : Math.sin(t * 3) * 4;
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = "#eef0ff";
+      ctx.beginPath();
+      ctx.arc(x, y + bob, 11, Math.PI, 0);
+      ctx.lineTo(x + 11, y + bob + 12);
+      for (let k = 2; k >= -2; k--) ctx.lineTo(x + k * 5.5, y + bob + (k % 2 ? 8 : 14));
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#3a2f4a";
+      ctx.beginPath();
+      ctx.arc(x - 4, y + bob - 1, 1.8, 0, Math.PI * 2);
+      ctx.arc(x + 4, y + bob - 1, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    } else if (c === "star") {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rm ? 0 : t * 1.5);
+      ctx.fillStyle = "#ffe27a";
+      ctx.shadowColor = "#ffe27a";
+      ctx.shadowBlur = 8;
+      star(ctx, 0, 0, 11);
       ctx.restore();
     }
   }
