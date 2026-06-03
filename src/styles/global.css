@@ -376,3 +376,124 @@ h1, h2, h3 { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ───────────────────────────── play & discover ───────────────────────────── */
+.section-note { color: var(--ink-soft); font-size: 13px; font-weight: 600; line-height: 1.45; margin: 0 2px 12px; }
+
+/* confetti overlay */
+.confetti-layer { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 70; }
+
+/* combo / extra toasts */
+.toast-combo { background: linear-gradient(120deg, #ffb13d, #ff6f9c); }
+.toast-chest { background: linear-gradient(120deg, #f7b733, #fc4a1a); }
+.toast-gacha { background: linear-gradient(120deg, #7c5cff, #ff6f9c); }
+.toast-adventure { background: linear-gradient(120deg, #34c98a, #4b9bff); }
+
+/* daily chest */
+.chest-card { background: var(--surface); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow-sm); margin: 10px 0; border: 2px solid transparent; }
+.chest-card.ready { border-color: var(--coin); background: linear-gradient(120deg, #fff, #fff7e3); }
+.chest-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.chest-title { font-weight: 800; font-size: 15px; }
+.chest-streak { font-size: 12px; font-weight: 800; color: #c75a2a; background: #ffe3d3; padding: 3px 8px; border-radius: 999px; }
+.chest-track { display: flex; gap: 5px; margin-bottom: 12px; }
+.chest-slot {
+  flex: 1; aspect-ratio: 1; border-radius: 10px; background: var(--surface-2);
+  display: grid; place-items: center; font-weight: 800; font-size: 14px; color: var(--muted);
+}
+.chest-slot.done { background: var(--good); color: #fff; }
+.chest-slot.current { background: var(--coin); color: #5a3b00; outline: 3px solid #ffe9b8; transform: scale(1.06); }
+.chest-claim { animation: pulse-glow 1.6s ease-in-out infinite; }
+.chest-back { text-align: center; color: var(--muted); font-weight: 700; font-size: 13px; margin: 0; }
+@keyframes pulse-glow { 0%, 100% { box-shadow: 0 4px 0 #5b3fd6; } 50% { box-shadow: 0 4px 18px rgba(124, 92, 255, 0.6); } }
+
+/* adventure banner (home) */
+.adv-banner {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border-radius: var(--radius); padding: 10px 12px;
+  box-shadow: var(--shadow-sm); margin: 10px 0; border: 2px solid transparent; text-align: left;
+}
+.adv-banner.ready { border-color: var(--good); animation: pulse-glow 1.6s ease-in-out infinite; }
+.adv-banner-icon { font-size: 26px; }
+.adv-banner-body { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.adv-banner-name { font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adv-banner-icon { flex-shrink: 0; }
+.adv-banner-track { height: 7px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.adv-banner-fill { display: block; height: 100%; background: linear-gradient(90deg, #34c98a, #4b9bff); }
+.adv-banner-status { font-size: 12px; font-weight: 800; color: var(--ink-soft); white-space: nowrap; }
+
+/* arcade */
+.arcade-grid, .adv-grid { display: flex; flex-direction: column; gap: 10px; }
+.arcade-card, .adv-card {
+  display: flex; align-items: center; gap: 12px; background: var(--surface);
+  border-radius: var(--radius-sm); padding: 12px; box-shadow: var(--shadow-sm);
+}
+.arcade-icon, .adv-icon { font-size: 34px; width: 44px; text-align: center; flex-shrink: 0; }
+.arcade-info, .adv-info { flex: 1; min-width: 0; }
+.arcade-name, .adv-name { font-weight: 800; font-size: 15px; }
+.arcade-blurb, .adv-blurb { font-size: 12px; color: var(--muted); font-weight: 600; line-height: 1.3; margin: 2px 0; }
+.arcade-meta, .adv-meta { display: flex; gap: 10px; font-size: 12px; font-weight: 800; color: var(--ink-soft); flex-wrap: wrap; }
+/* Buttons in these flex rows must size to content, not stretch full-width. */
+.arcade-card .btn, .adv-card .btn, .adv-active .btn { width: auto; flex-shrink: 0; }
+
+/* active adventure card */
+.adv-active { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: var(--radius-sm); padding: 14px; box-shadow: var(--shadow-sm); border: 2px solid var(--primary-soft); }
+.adv-active-icon { font-size: 40px; flex-shrink: 0; }
+.adv-active-body { flex: 1; min-width: 0; }
+.adv-active-name { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adv-active .btn { flex-shrink: 0; }
+.adv-track { height: 9px; background: var(--surface-2); border-radius: 6px; overflow: hidden; margin: 7px 0 5px; }
+.adv-fill { height: 100%; background: linear-gradient(90deg, #34c98a, #4b9bff); transition: width 1s linear; }
+.adv-remaining { font-size: 12px; font-weight: 800; color: var(--ink-soft); white-space: nowrap; }
+
+/* mystery egg */
+.egg-card { display: flex; gap: 14px; align-items: center; background: linear-gradient(135deg, #fff, #f3ecff); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); margin-bottom: 14px; border: 2px solid #e7ddff; }
+.egg-art { font-size: 54px; animation: egg-wobble 2.5s ease-in-out infinite; }
+@keyframes egg-wobble { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+.egg-body { flex: 1; min-width: 0; }
+.egg-title { font-weight: 900; font-size: 16px; }
+.egg-blurb { font-size: 12px; color: var(--ink-soft); font-weight: 600; line-height: 1.35; margin: 4px 0 8px; }
+.egg-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.egg-meta .chip { background: var(--surface-2); color: var(--ink-soft); }
+
+/* collection */
+.collect-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.collect-cell { background: var(--surface); border-radius: var(--radius-sm); padding: 12px 6px; text-align: center; box-shadow: var(--shadow-sm); border: 2px solid transparent; }
+.collect-cell.locked { opacity: 0.6; }
+.collect-icon { font-size: 28px; }
+.collect-name { font-size: 11px; font-weight: 800; margin-top: 2px; }
+.collect-rarity { font-size: 10px; font-weight: 800; margin-top: 1px; }
+
+/* shop rarity */
+.shop-card-rarity { font-size: 10px; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+.shop-card { border-color: color-mix(in srgb, var(--rarity, #fff) 35%, transparent); }
+
+/* ───────────────────────────── mini-game modals ───────────────────────────── */
+.game-modal { position: fixed; inset: 0; background: rgba(20, 12, 40, 0.6); display: grid; place-items: center; z-index: 65; padding: 16px; backdrop-filter: blur(4px); }
+.game-card { background: var(--surface); border-radius: 24px; padding: 16px; width: 100%; max-width: 360px; box-shadow: var(--shadow); animation: pop 0.25s ease; }
+.game-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.game-head h2 { font-size: 18px; font-weight: 900; }
+.game-head .icon-btn { background: var(--surface-2); color: var(--ink-soft); }
+.game-stage { position: relative; border-radius: 16px; overflow: hidden; }
+.game-canvas { display: block; width: 100%; border-radius: 16px; background: #f3ecff; touch-action: none; }
+.game-overlay {
+  position: absolute; inset: 0; background: rgba(28, 18, 50, 0.78);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 24px; color: #fff; text-align: center; border-radius: 16px;
+}
+.game-tip { font-weight: 700; line-height: 1.5; margin: 0; }
+.game-best { font-weight: 800; color: #ffe27a; margin: 0; }
+.game-score { font-size: 44px; font-weight: 900; }
+.game-overlay .btn-block { max-width: 220px; }
+.game-over-actions { display: flex; gap: 10px; }
+.game-foot { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); margin: 10px 0 0; }
+
+/* pet says */
+.says-stage { position: relative; }
+.says-status { text-align: center; font-weight: 800; height: 24px; color: var(--ink-soft); margin-bottom: 8px; }
+.says-round { color: var(--primary); }
+.says-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; aspect-ratio: 1; max-width: 320px; margin: 0 auto; }
+.says-grid.live .says-pad { cursor: pointer; }
+.says-pad { border-radius: 18px; opacity: 0.55; transition: opacity 0.1s, transform 0.1s; box-shadow: inset 0 -6px 0 rgba(0,0,0,0.15); }
+.says-pad.lit { opacity: 1; transform: scale(0.97); box-shadow: 0 0 22px currentColor, inset 0 -6px 0 rgba(0,0,0,0.15); }
+.says-pad:disabled { cursor: default; }
+.says-overlay { position: absolute; inset: 0; border-radius: 16px; }

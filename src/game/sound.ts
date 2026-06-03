@@ -4,7 +4,25 @@
  * (passed in by the caller) and lazily creates the AudioContext on first use
  * so we don't trip browser autoplay policies.
  */
-type Cue = "complete" | "undo" | "coin" | "levelup" | "evolve" | "pet" | "buy" | "quest" | "error";
+type Cue =
+  | "complete"
+  | "undo"
+  | "coin"
+  | "levelup"
+  | "evolve"
+  | "pet"
+  | "buy"
+  | "quest"
+  | "error"
+  | "chest"
+  | "gacha"
+  | "combo"
+  | "catch"
+  | "gameover"
+  | "blip1"
+  | "blip2"
+  | "blip3"
+  | "blip4";
 
 let ctx: AudioContext | null = null;
 
@@ -44,6 +62,16 @@ const CUES: Record<Cue, () => void> = {
   buy: () => { blip(740, 0, 0.1, "triangle", 0.14); blip(1110, 0.07, 0.12, "triangle", 0.12); },
   quest: () => [659, 880, 1320].forEach((f, i) => blip(f, i * 0.08, 0.16, "triangle", 0.14)),
   error: () => { blip(200, 0, 0.16, "sawtooth", 0.1); },
+  chest: () => [523, 659, 784, 1047, 1319].forEach((f, i) => blip(f, i * 0.07, 0.18, "triangle", 0.15)),
+  gacha: () => [392, 587, 784, 1175].forEach((f, i) => blip(f, i * 0.11, 0.2, "triangle", 0.14)),
+  combo: () => { blip(880, 0, 0.07, "square", 0.1); blip(1320, 0.05, 0.09, "square", 0.09); },
+  catch: () => { blip(1046, 0, 0.06, "triangle", 0.1); blip(1318, 0.04, 0.07, "triangle", 0.08); },
+  gameover: () => [440, 349, 262].forEach((f, i) => blip(f, i * 0.12, 0.2, "sawtooth", 0.12)),
+  // Simon-style pads (Pet Says).
+  blip1: () => blip(392, 0, 0.32, "sine", 0.16),
+  blip2: () => blip(523, 0, 0.32, "sine", 0.16),
+  blip3: () => blip(659, 0, 0.32, "sine", 0.16),
+  blip4: () => blip(784, 0, 0.32, "sine", 0.16),
 };
 
 export function play(cue: Cue, enabled: boolean): void {

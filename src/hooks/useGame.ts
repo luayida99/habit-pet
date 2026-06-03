@@ -25,9 +25,11 @@ export function useGame() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [heartPulse, setHeartPulse] = useState(0);
   const [sparklePulse, setSparklePulse] = useState(0);
+  const [celebrate, setCelebrate] = useState(0);
   const stageRef = useRef<EvolutionStage>(currentStage(state));
   const heartBump = useCallback(() => setHeartPulse((p) => p + 1), []);
   const sparkleBump = useCallback(() => setSparklePulse((p) => p + 1), []);
+  const celebrateBump = useCallback(() => setCelebrate((p) => p + 1), []);
 
   useEffect(() => {
     saveState(state);
@@ -66,16 +68,45 @@ export function useGame() {
           });
           stageRef.current = newStage;
           sparkleBump();
+          celebrateBump();
           play("evolve", next.settings.sound);
         }
 
-        // Sounds tied to event kinds.
+        // Sounds + celebration effects tied to event kinds.
+        const snd = next.settings.sound;
         for (const e of events) {
-          if (e.kind === "levelup") {
-            play("levelup", next.settings.sound);
-            sparkleBump();
-          } else if (e.kind === "streak") play("levelup", next.settings.sound);
-          else if (e.kind === "achievement") play("buy", next.settings.sound);
+          switch (e.kind) {
+            case "levelup":
+              play("levelup", snd);
+              sparkleBump();
+              celebrateBump();
+              break;
+            case "streak":
+              play("levelup", snd);
+              celebrateBump();
+              break;
+            case "achievement":
+              play("buy", snd);
+              celebrateBump();
+              break;
+            case "quest":
+              celebrateBump();
+              break;
+            case "chest":
+              play("chest", snd);
+              celebrateBump();
+              break;
+            case "gacha":
+              play("gacha", snd);
+              celebrateBump();
+              break;
+            case "adventure":
+              celebrateBump();
+              break;
+            case "combo":
+              play("combo", snd);
+              break;
+          }
         }
 
         // Primary cue for the action itself.
@@ -88,7 +119,7 @@ export function useGame() {
         }
         return next;
       }),
-    [sparkleBump],
+    [sparkleBump, celebrateBump],
   );
 
   // Decay tick: on an interval and whenever the tab regains focus.
@@ -166,6 +197,18 @@ export function useGame() {
     [apply],
   );
 
+  const claimDaily = useCallback(() => apply((s) => engine.claimDailyReward(s)), [apply]);
+  const startAdventure = useCallback(
+    (id: string) => apply((s) => engine.startAdventure(s, id), () => "pet"),
+    [apply],
+  );
+  const collectAdventure = useCallback(() => apply((s) => engine.collectAdventure(s)), [apply]);
+  const hatchEgg = useCallback(() => apply((s) => engine.hatchEgg(s)), [apply]);
+  const finishGame = useCallback(
+    (gameId: string, score: number) => apply((s) => engine.finishMiniGame(s, gameId, score)),
+    [apply],
+  );
+
   const setSettings = useCallback(
     (patch: Partial<GameState["settings"]>) =>
       setState((s) => ({ ...s, settings: { ...s.settings, ...patch } })),
@@ -185,6 +228,7 @@ export function useGame() {
     toasts,
     heartPulse,
     sparklePulse,
+    celebrate,
     actions: {
       onboard,
       toggleHabit,
@@ -195,6 +239,11 @@ export function useGame() {
       buy,
       equip,
       claimQuest,
+      claimDaily,
+      startAdventure,
+      collectAdventure,
+      hatchEgg,
+      finishGame,
       setSettings,
       resetGame,
     },

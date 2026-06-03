@@ -1,7 +1,12 @@
 import type { EvolutionStage, PetSpecies } from "./types";
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 export const STORAGE_KEY = "habitpet.save.v1";
+
+/** Habits checked within this window of each other build a combo. */
+export const COMBO_WINDOW_MS = 12_000;
+/** Bonus coins per combo step beyond the first (combo x2 → +3, x3 → +6 …). */
+export const COMBO_BONUS_COINS = 3;
 
 /** Meters live on a 0–100 scale. */
 export const METER_MAX = 100;

@@ -114,3 +114,21 @@ export function vitality(state: GameState): number {
   const { happiness, health, energy } = state.pet;
   return (happiness + health + energy) / (METER_MAX * 3);
 }
+
+/** Milliseconds left on the active adventure (0 if none or finished). */
+export function adventureRemainingMs(state: GameState, now: number = Date.now()): number {
+  if (!state.adventure) return 0;
+  return Math.max(0, state.adventure.endsAt - now);
+}
+
+export const adventureReady = (state: GameState, now: number = Date.now()): boolean =>
+  state.adventure != null && now >= state.adventure.endsAt;
+
+/** 0–1 progress through the active adventure. */
+export function adventureProgress(state: GameState, now: number = Date.now()): number {
+  const adv = state.adventure;
+  if (!adv) return 0;
+  const total = adv.endsAt - adv.startedAt;
+  if (total <= 0) return 1;
+  return Math.max(0, Math.min(1, (now - adv.startedAt) / total));
+}

@@ -2,6 +2,7 @@ import { ACHIEVEMENTS } from "../game/achievements";
 import { activeHabits, habitBestStreak } from "../game/selectors";
 import type { GameState } from "../game/types";
 import { CalendarHeatmap } from "./CalendarHeatmap";
+import { Collection } from "./Collection";
 
 interface Props {
   state: GameState;
@@ -16,7 +17,10 @@ export function Awards({ state }: Props) {
     { label: "Longest streak", value: `${longestEver}🔥` },
     { label: "Active days", value: state.stats.activeDays.length },
     { label: "Quests done", value: state.stats.questsCompleted },
-    { label: "Pets given", value: state.stats.petsGiven },
+    { label: "Games played", value: state.stats.gamesPlayed },
+    { label: "Adventures", value: state.stats.adventuresDone },
+    { label: "Discoveries", value: state.discoveries.length },
+    { label: "Eggs hatched", value: state.stats.eggsHatched },
     { label: "Level", value: state.level },
   ];
 
@@ -51,6 +55,8 @@ export function Awards({ state }: Props) {
           );
         })}
       </div>
+
+      <Collection state={state} />
     </section>
   );
 }

@@ -3,12 +3,23 @@ import {
   addHabit,
   applyTick,
   buyItem,
+  claimDailyReward,
   claimQuest,
+  collectAdventure,
   completeOnboarding,
   createInitialState,
+  finishMiniGame,
+  hatchEgg,
   petInteract,
+  startAdventure,
   toggleHabit,
 } from "./engine";
+import { adventureDef } from "./adventures";
+import { nextLoginStreak, weekDay } from "./dailyReward";
+import { EGG_PRICE } from "./gacha";
+import { scoreToReward, miniGameDef, DAILY_COIN_CAP } from "./minigames";
+import { mulberry32 } from "./rng";
+import { adventureRemainingMs } from "./selectors";
 import { addDays, dayKey } from "./dates";
 import {
   completedTodayCount,
@@ -230,3 +241,160 @@ it("addDays / dayKey round trip", () => {
   expect(addDays("2026-01-31", 1)).toBe("2026-02-01");
   expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
 });
+
+describe("habit combos", () => {
+  it("stacks bonus coins for quick successive check-ins", () => {
+    let g = freshGame();
+    g = addHabit(g, { name: "a", emoji: "💧", color: "#fff" }, T0);
+    g = addHabit(g, { name: "b", emoji: "💧", color: "#fff" }, T0);
+    g = addHabit(g, { name: "c", emoji: "💧", color: "#fff" }, T0);
+    const ids = g.habits.map((h) => h.id);
+
+    const r1 = toggleHabit(g, ids[0], T0);
+    expect(r1.state.combo.count).toBe(1);
+    const r2 = toggleHabit(r1.state, ids[1], T0 + 1000); // within window
+    expect(r2.state.combo.count).toBe(2);
+    expect(r2.events.some((e) => e.kind === "combo")).toBe(true);
+    const r3 = toggleHabit(r2.state, ids[2], T0 + 2000);
+    expect(r3.state.combo.count).toBe(3);
+
+    // Coins reflect base + combo bonus (3 + 0, 3 + 1*3, 3 ... base habitCoins=8)
+    // Just assert the 3rd completion granted more than a lone completion would.
+    const lone = toggleHabit(freshGameWithHabit(), "h", T0);
+    const loneGain = lone.state.coins - freshGameWithHabit().coins;
+    const comboGain = r3.state.coins - r2.state.coins;
+    expect(comboGain).toBeGreaterThan(loneGain);
+  });
+
+  it("resets the combo after the window lapses", () => {
+    let g = freshGame();
+    g = addHabit(g, { name: "a", emoji: "💧", color: "#fff" }, T0);
+    g = addHabit(g, { name: "b", emoji: "💧", color: "#fff" }, T0);
+    const ids = g.habits.map((h) => h.id);
+    const r1 = toggleHabit(g, ids[0], T0);
+    const r2 = toggleHabit(r1.state, ids[1], T0 + 60_000); // > window
+    expect(r2.state.combo.count).toBe(1);
+  });
+});
+
+describe("daily reward", () => {
+  it("increments login streak on consecutive days and blocks double-claim", () => {
+    const g = freshGame();
+    const first = claimDailyReward(g, T0, mulberry32(1));
+    expect(first.state.coins).toBeGreaterThan(g.coins);
+    expect(first.state.dailyReward.streak).toBe(1);
+    // Same day → no-op.
+    const again = claimDailyReward(first.state, T0, mulberry32(1));
+    expect(again.state.coins).toBe(first.state.coins);
+    // Next day → streak 2.
+    const next = claimDailyReward(first.state, T0 + DAY, mulberry32(2));
+    expect(next.state.dailyReward.streak).toBe(2);
+    // Skip a day → reset to 1.
+    const skipped = claimDailyReward(next.state, T0 + 3 * DAY, mulberry32(3));
+    expect(skipped.state.dailyReward.streak).toBe(1);
+  });
+
+  it("day 7 grants a freeze token", () => {
+    const g = { ...freshGame(), dailyReward: { lastClaim: dayKey(T0 - DAY), streak: 6 } };
+    const before = g.freezes;
+    const r = claimDailyReward(g, T0, mulberry32(5));
+    expect(weekDay(r.state.dailyReward.streak)).toBe(7);
+    expect(r.state.freezes).toBe(before + 1);
+  });
+
+  it("nextLoginStreak is pure and correct", () => {
+    const g = { ...freshGame(), dailyReward: { lastClaim: dayKey(T0 - DAY), streak: 4 } };
+    expect(nextLoginStreak(g, T0)).toBe(5);
+  });
+});
+
+describe("adventures", () => {
+  it("starts only with enough energy and spends it", () => {
+    const g = { ...freshGame(), pet: { ...freshGame().pet, energy: 100 } };
+    const def = adventureDef("forest")!;
+    const r = startAdventure(g, "forest", T0);
+    expect(r.state.adventure?.defId).toBe("forest");
+    expect(r.state.pet.energy).toBe(100 - def.energyCost);
+    expect(adventureRemainingMs(r.state, T0)).toBe(def.durationMin * 60_000);
+  });
+
+  it("refuses to start with low energy or when one is active", () => {
+    const low = { ...freshGame(), pet: { ...freshGame().pet, energy: 1 } };
+    expect(startAdventure(low, "summit", T0).state.adventure).toBeNull();
+
+    const busy = startAdventure({ ...freshGame(), pet: { ...freshGame().pet, energy: 100 } }, "backyard", T0).state;
+    const second = startAdventure(busy, "forest", T0);
+    expect(second.state.adventure?.defId).toBe("backyard"); // unchanged
+  });
+
+  it("won't collect early but pays out + collects discoveries when done", () => {
+    const g = { ...freshGame(), pet: { ...freshGame().pet, energy: 100 } };
+    const started = startAdventure(g, "backyard", T0).state;
+    const early = collectAdventure(started, T0 + 1000, mulberry32(42));
+    expect(early.state.adventure).not.toBeNull(); // still exploring
+
+    const def = adventureDef("backyard")!;
+    const done = collectAdventure(started, T0 + def.durationMin * 60_000 + 1, mulberry32(42));
+    expect(done.state.adventure).toBeNull();
+    expect(done.state.coins).toBeGreaterThan(started.coins);
+    expect(done.state.stats.adventuresDone).toBe(1);
+  });
+});
+
+describe("mystery egg", () => {
+  it("spends coins and grants a cosmetic (auto-equipped)", () => {
+    const g = { ...freshGame(), coins: 1000 };
+    const r = hatchEgg(g, T0, mulberry32(7));
+    expect(r.state.coins).toBeLessThanOrEqual(1000 - EGG_PRICE + 300); // minus price, plus any refund
+    expect(r.state.stats.eggsHatched).toBe(1);
+    // Either a new owned cosmetic or a duplicate refund happened.
+    const gainedItem = r.state.ownedItems.length > g.ownedItems.length;
+    const gotRefund = r.state.coins > 1000 - EGG_PRICE;
+    expect(gainedItem || gotRefund).toBe(true);
+  });
+
+  it("won't hatch without enough coins", () => {
+    const g = { ...freshGame(), coins: 0 };
+    const r = hatchEgg(g, T0, mulberry32(7));
+    expect(r.state.coins).toBe(0);
+    expect(r.state.ownedItems.length).toBe(0);
+  });
+
+  it("pity guarantees an epic+ after a dry streak", () => {
+    const g = { ...freshGame(), coins: 100000, gachaPity: 7 };
+    const r = hatchEgg(g, T0, mulberry32(123));
+    // After hitting pity it should reset to 0 (an epic+ was pulled).
+    expect(r.state.gachaPity).toBe(0);
+  });
+});
+
+describe("mini-games", () => {
+  it("rewards scale with score and respect the daily cap", () => {
+    const def = miniGameDef("treat-catch")!;
+    const small = scoreToReward(def, 10, 0);
+    expect(small.coins).toBe(10);
+    // Past the cap, coins taper to a trickle.
+    const capped = scoreToReward(def, 100, DAILY_COIN_CAP);
+    expect(capped.coins).toBeLessThan(100);
+    expect(capped.coinsTowardCap).toBe(0);
+  });
+
+  it("finishMiniGame records a high score and tracks daily coins", () => {
+    const g = { ...freshGame(), pet: { ...freshGame().pet, energy: 100 } };
+    const r = finishMiniGame(g, "treat-catch", 25, T0);
+    expect(r.state.arcade["treat-catch"].highScore).toBe(25);
+    expect(r.state.coins).toBeGreaterThan(g.coins);
+    expect(r.state.stats.gamesPlayed).toBe(1);
+    // A lower later score keeps the previous high.
+    const r2 = finishMiniGame(r.state, "treat-catch", 5, T0 + 1000);
+    expect(r2.state.arcade["treat-catch"].highScore).toBe(25);
+  });
+});
+
+function freshGameWithHabit(): GameState {
+  let g = freshGame();
+  g = { ...addHabit(g, { name: "x", emoji: "💧", color: "#fff" }, T0) };
+  // normalize the id to "h" for the lone-completion comparison
+  g = { ...g, habits: g.habits.map((h) => ({ ...h, id: "h" })) };
+  return g;
+}

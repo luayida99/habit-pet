@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { SHOP_ITEMS, type ShopSlot } from "../game/shop";
+import { RARITY_META, SHOP_ITEMS, type ShopSlot } from "../game/shop";
 import type { GameState } from "../game/types";
+import { MysteryEgg } from "./MysteryEgg";
 
 interface Props {
   state: GameState;
   onBuy: (itemId: string) => void;
+  onHatch: () => void;
 }
 
 const TABS: { slot: ShopSlot; label: string; icon: string }[] = [
@@ -15,9 +17,10 @@ const TABS: { slot: ShopSlot; label: string; icon: string }[] = [
   { slot: "consumable", label: "Items", icon: "🧊" },
 ];
 
-export function Shop({ state, onBuy }: Props) {
+export function Shop({ state, onBuy, onHatch }: Props) {
   const [slot, setSlot] = useState<ShopSlot>("color");
-  const items = SHOP_ITEMS.filter((i) => i.slot === slot);
+  // Egg-exclusive cosmetics are hidden from the coin shop.
+  const items = SHOP_ITEMS.filter((i) => i.slot === slot && !i.gachaOnly);
 
   return (
     <section className="shop">
@@ -25,6 +28,8 @@ export function Shop({ state, onBuy }: Props) {
         <h2>Shop</h2>
         <span className="chip chip-coin">🪙 {state.coins}</span>
       </div>
+
+      <MysteryEgg state={state} onHatch={onHatch} />
 
       <div className="shop-tabs">
         {TABS.map((t) => (
@@ -56,9 +61,18 @@ export function Shop({ state, onBuy }: Props) {
           else { label = `🪙 ${item.price}`; }
 
           return (
-            <div className={`shop-card ${equipped ? "is-equipped" : ""}`} key={item.id}>
+            <div
+              className={`shop-card ${equipped ? "is-equipped" : ""}`}
+              key={item.id}
+              style={{ ["--rarity" as string]: RARITY_META[item.rarity].color }}
+            >
               <div className="shop-card-icon">{item.icon}</div>
               <div className="shop-card-name">{item.name}</div>
+              {!isConsumable && (
+                <div className="shop-card-rarity" style={{ color: RARITY_META[item.rarity].color }}>
+                  {RARITY_META[item.rarity].label}
+                </div>
+              )}
               <div className="shop-card-blurb">{item.blurb}</div>
               <button
                 className={`btn ${cls}`}

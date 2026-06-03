@@ -8,19 +8,24 @@ import { HabitList } from "./components/HabitList";
 import { Quests } from "./components/Quests";
 import { Shop } from "./components/Shop";
 import { Awards } from "./components/Awards";
+import { Arcade } from "./components/Arcade";
+import { Adventures, AdventureBanner } from "./components/Adventures";
+import { DailyChest } from "./components/DailyChest";
 import { Toasts } from "./components/Toasts";
+import { Confetti } from "./components/Confetti";
 import { SettingsModal } from "./components/SettingsModal";
 
-type Tab = "home" | "shop" | "awards";
+type Tab = "home" | "play" | "shop" | "you";
 
 const TABS: { id: Tab; icon: string; label: string }[] = [
   { id: "home", icon: "🏠", label: "Home" },
+  { id: "play", icon: "🎮", label: "Play" },
   { id: "shop", icon: "🎁", label: "Shop" },
-  { id: "awards", icon: "🏆", label: "Awards" },
+  { id: "you", icon: "🏆", label: "You" },
 ];
 
 export default function App() {
-  const { state, toasts, heartPulse, sparklePulse, actions } = useGame();
+  const { state, toasts, heartPulse, sparklePulse, celebrate, actions } = useGame();
   const [tab, setTab] = useState<Tab>("home");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -47,6 +52,8 @@ export default function App() {
                 onPet={actions.petPet}
               />
               <StatBars pet={state.pet} />
+              <AdventureBanner state={state} onCollect={actions.collectAdventure} />
+              <DailyChest state={state} onClaim={actions.claimDaily} />
               <Quests state={state} onClaim={actions.claimQuest} />
               <HabitList
                 state={state}
@@ -57,8 +64,18 @@ export default function App() {
               />
             </>
           )}
-          {tab === "shop" && <Shop state={state} onBuy={actions.buy} />}
-          {tab === "awards" && <Awards state={state} />}
+          {tab === "play" && (
+            <>
+              <Arcade state={state} onFinish={actions.finishGame} />
+              <Adventures
+                state={state}
+                onStart={actions.startAdventure}
+                onCollect={actions.collectAdventure}
+              />
+            </>
+          )}
+          {tab === "shop" && <Shop state={state} onBuy={actions.buy} onHatch={actions.hatchEgg} />}
+          {tab === "you" && <Awards state={state} />}
         </main>
 
         <nav className="tabbar">
@@ -76,6 +93,7 @@ export default function App() {
       </div>
 
       <Toasts toasts={toasts} />
+      <Confetti trigger={celebrate} reducedMotion={state.settings.reducedMotion} />
       {settingsOpen && (
         <SettingsModal
           state={state}
