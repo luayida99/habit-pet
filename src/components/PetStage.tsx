@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { currentStage, petMood, topStreak, vitality } from "../game/selectors";
 import type { GameState, Mood } from "../game/types";
-import { PetCanvas } from "./PetCanvas";
+import { Pet3D } from "./Pet3D";
 
 interface Props {
   state: GameState;
@@ -66,7 +66,7 @@ export function PetStage({ state, heartPulse, sparklePulse, onPet }: Props) {
     <section className="pet-stage">
       <div className={`pet-bubble ${reaction ? "react" : ""}`}>{reaction ?? line}</div>
       <button className="pet-tap" onClick={onPet} aria-label="Pet your friend" title="Give them a pet 💞">
-        <PetCanvas
+        <Pet3D
           stage={stage}
           mood={mood}
           species={state.pet.species}
