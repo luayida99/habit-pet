@@ -16,9 +16,12 @@ HabitPet leans on the gamification ideas that actually keep people coming back
 (borrowed from Finch, Habitica, Forest & friends) while deliberately avoiding
 the shame mechanics that cause burnout:
 
-- **A living pet.** Drawn from scratch on a `<canvas>` — no sprite sheets. It
-  breathes, blinks, bounces, blushes, naps, and reacts to your care in real
-  time. Its expression is a pure function of its happiness/health/energy.
+- **A living pet — now in 3D.** Procedurally built with Three.js/WebGL (no
+  model files): it breathes, blinks, bounces, blushes, naps, wears real 3D hats
+  and companions, and reacts to your care in real time. Its expression is a pure
+  function of its happiness/health/energy. The Three.js bundle is code-split and
+  lazy-loaded, and there's an automatic 2D-canvas fallback where WebGL isn't
+  available.
 - **Evolution.** Egg → Blob → Child → Teen → Grown as your longest streak
   grows. Each stage changes the silhouette (ears, arms, feet, size).
 - **Streaks, gently.** 🔥 per-habit streaks with milestone payouts. Miss a day
