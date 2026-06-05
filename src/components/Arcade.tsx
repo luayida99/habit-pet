@@ -3,13 +3,15 @@ import { MINIGAMES, miniGameDef } from "../game/minigames";
 import type { GameState } from "../game/types";
 import { TreatCatchGame } from "./TreatCatchGame";
 import { PetSaysGame } from "./PetSaysGame";
+import { CritterSafari } from "./CritterSafari";
 
 interface Props {
   state: GameState;
   onFinish: (gameId: string, score: number) => void;
+  onFinishSafari: (r: { score: number; caughtId: string | null }) => void;
 }
 
-export function Arcade({ state, onFinish }: Props) {
+export function Arcade({ state, onFinish, onFinishSafari }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
   const energy = state.pet.energy;
   const openDef = openId ? miniGameDef(openId) : undefined;
@@ -69,6 +71,15 @@ export function Arcade({ state, onFinish }: Props) {
           def={openDef}
           highScore={state.arcade[openDef.id]?.highScore ?? 0}
           onComplete={complete}
+          onExit={() => setOpenId(null)}
+          sound={state.settings.sound}
+        />
+      )}
+      {openDef?.id === "critter-safari" && (
+        <CritterSafari
+          petEmoji="🐾"
+          caughtCount={state.crittersCaught.length}
+          onComplete={(r) => { onFinishSafari(r); setOpenId(null); }}
           onExit={() => setOpenId(null)}
           sound={state.settings.sound}
         />

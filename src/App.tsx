@@ -66,7 +66,7 @@ export default function App() {
           )}
           {tab === "play" && (
             <>
-              <Arcade state={state} onFinish={actions.finishGame} />
+              <Arcade state={state} onFinish={actions.finishGame} onFinishSafari={actions.finishSafari} />
               <Adventures
                 state={state}
                 onStart={actions.startAdventure}

@@ -39,6 +39,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "hatcher", name: "Egg Hatcher", icon: "🥚", desc: "Hatch 5 mystery eggs.", reward: 70, test: (s) => s.stats.eggsHatched >= 5 },
   { id: "loyal", name: "Loyal Friend", icon: "📅", desc: "Reach a 7-day login streak.", reward: 120, test: (s) => s.dailyReward.streak >= 7 },
   { id: "combo-king", name: "Combo King", icon: "⚡", desc: "Hit a ×4 habit combo.", reward: 80, test: (s) => s.combo.count >= 4 },
+  { id: "critter-catcher", name: "Critter Catcher", icon: "🔴", desc: "Catch 3 wild critters.", reward: 60, test: (s) => s.crittersCaught.length >= 3 },
+  { id: "dex-master", name: "Dex Master", icon: "🐾", desc: "Catch every critter.", reward: 350, test: (s) => s.crittersCaught.length >= 12 },
 ];
 
 function perfectDay(s: GameState): boolean {

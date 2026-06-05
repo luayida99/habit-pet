@@ -208,6 +208,11 @@ export function useGame() {
     (gameId: string, score: number) => apply((s) => engine.finishMiniGame(s, gameId, score)),
     [apply],
   );
+  const finishSafari = useCallback(
+    (result: { score: number; caughtId: string | null }) =>
+      apply((s) => engine.finishSafari(s, result)),
+    [apply],
+  );
 
   const setSettings = useCallback(
     (patch: Partial<GameState["settings"]>) =>
@@ -244,6 +249,7 @@ export function useGame() {
       collectAdventure,
       hatchEgg,
       finishGame,
+      finishSafari,
       setSettings,
       resetGame,
     },

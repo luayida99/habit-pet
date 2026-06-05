@@ -64,15 +64,17 @@ export function TreatCatchGame({ def, petEmoji, highScore, onComplete, onExit, s
 
     let raf = 0;
     let prev = performance.now();
+    const startedAt = prev;
     const s = g.current;
 
     const loop = (now: number) => {
       const dt = Math.min(48, now - prev);
       prev = now;
-      const elapsed = ROUND_MS - s.timeLeft;
+      // Wall-clock countdown so the game never slows down when frames drop.
+      const elapsed = now - startedAt;
+      s.timeLeft = ROUND_MS - elapsed;
       const difficulty = 1 + elapsed / 16000; // ramps up
 
-      s.timeLeft -= dt;
       if (s.timeLeft <= 0 || s.lives <= 0) {
         end();
         return;

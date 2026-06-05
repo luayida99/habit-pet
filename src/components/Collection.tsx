@@ -1,4 +1,5 @@
 import { DISCOVERIES } from "../game/adventures";
+import { CRITTERS, TYPE_META } from "../game/critters";
 import { RARITY_META, cosmetics } from "../game/shop";
 import type { GameState } from "../game/types";
 
@@ -8,11 +9,38 @@ interface Props {
 
 export function Collection({ state }: Props) {
   const owned = new Set(state.discoveries);
+  const caught = new Set(state.crittersCaught);
   const cos = cosmetics();
   const ownedCos = cos.filter((c) => state.ownedItems.includes(c.id)).length;
 
   return (
     <>
+      <div className="section-head">
+        <h2>🐾 Critter Dex</h2>
+        <span className="section-count">{caught.size}/{CRITTERS.length}</span>
+      </div>
+      <div className="collect-grid">
+        {CRITTERS.map((c) => {
+          const got = caught.has(c.id);
+          return (
+            <div
+              className={`collect-cell ${got ? "got" : "locked"}`}
+              key={c.id}
+              style={got ? { borderColor: RARITY_META[c.rarity].color } : undefined}
+              title={got ? `${c.name} — ${TYPE_META[c.type].label} type` : "Not caught yet"}
+            >
+              <div className="collect-icon">{got ? c.emoji : "❔"}</div>
+              <div className="collect-name">{got ? c.name : "???"}</div>
+              {got && (
+                <div className="collect-rarity" style={{ color: TYPE_META[c.type].color }}>
+                  {TYPE_META[c.type].icon} {TYPE_META[c.type].label}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
       <div className="section-head">
         <h2>🔭 Discoveries</h2>
         <span className="section-count">{owned.size}/{DISCOVERIES.length}</span>

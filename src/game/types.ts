@@ -135,6 +135,8 @@ export interface GameState {
   adventure: ActiveAdventure | null;
   /** Collected discovery ids (from adventures). */
   discoveries: string[];
+  /** Critter ids caught in the Critter Safari minigame. */
+  crittersCaught: string[];
   /** Per-game stats keyed by mini-game id. */
   arcade: Record<string, ArcadeStat>;
   /** Hatches since the last epic+ pull, for the gacha pity timer. */
