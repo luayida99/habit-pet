@@ -33,6 +33,15 @@ export const MINIGAMES: MiniGameDef[] = [
     coinsPerScore: 6,
     xpPerScore: 5,
   },
+  {
+    id: "critter-safari",
+    name: "Critter Safari",
+    icon: "🌿",
+    blurb: "Battle & catch wild critters!",
+    energyCost: 10,
+    coinsPerScore: 1,
+    xpPerScore: 1,
+  },
 ];
 
 export const miniGameDef = (id: string): MiniGameDef | undefined =>

@@ -622,6 +622,9 @@ export function PetScene3D(props: Props) {
       starTex.dispose();
       shadowTex.dispose();
       renderer.dispose();
+      // Free the GPU context immediately so rapid tab switching can't exhaust
+      // the browser's limited pool of live WebGL contexts.
+      renderer.forceContextLoss();
       if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

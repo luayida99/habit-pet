@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from "react";
+import { Component, Suspense, lazy, useState, type ReactNode } from "react";
 import { PetCanvas } from "./PetCanvas";
 import type { EquippedCosmetics, EvolutionStage, Mood, PetSpecies } from "../game/types";
 
@@ -34,13 +34,34 @@ function webglSupported(): boolean {
   return cachedSupport;
 }
 
+/**
+ * Catches *any* runtime error from the 3D scene (driver quirks, context loss,
+ * out-of-memory on low-end GPUs) and renders the 2D pet instead — so a WebGL
+ * hiccup can never white-screen the whole app.
+ */
+class PetErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(err: unknown) {
+    console.warn("3D pet failed, falling back to 2D:", err);
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
 /** Renders the pet in 3D where supported, gracefully falling back to 2D. */
 export function Pet3D(props: PetViewProps) {
   const [use3D] = useState(() => webglSupported());
-  if (!use3D) return <PetCanvas {...props} />;
+  const fallback = <PetCanvas {...props} />;
+  if (!use3D) return fallback;
   return (
-    <Suspense fallback={<PetCanvas {...props} />}>
-      <PetScene3D {...props} />
-    </Suspense>
+    <PetErrorBoundary fallback={fallback}>
+      <Suspense fallback={fallback}>
+        <PetScene3D {...props} />
+      </Suspense>
+    </PetErrorBoundary>
   );
 }

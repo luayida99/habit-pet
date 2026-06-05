@@ -54,6 +54,7 @@ function migrate(saved: Partial<GameState>, now: number): GameState {
     dailyReward: saved.dailyReward ?? base.dailyReward,
     adventure: saved.adventure ?? null,
     discoveries: saved.discoveries ?? [],
+    crittersCaught: saved.crittersCaught ?? [],
     arcade: saved.arcade ?? {},
     gachaPity: saved.gachaPity ?? 0,
     combo: saved.combo ?? base.combo,

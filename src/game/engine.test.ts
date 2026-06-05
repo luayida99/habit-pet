@@ -14,6 +14,15 @@ import {
   startAdventure,
   toggleHabit,
 } from "./engine";
+import { finishSafari } from "./engine";
+import {
+  catchChance,
+  critter,
+  effectiveness,
+  moveDamage,
+  rollWildCritter,
+  safariScore,
+} from "./critters";
 import { adventureDef } from "./adventures";
 import { nextLoginStreak, weekDay } from "./dailyReward";
 import { EGG_PRICE } from "./gacha";
@@ -138,6 +147,66 @@ describe("decay tick", () => {
     const g = freshGame();
     const soon = applyTick(g, T0 + 30 * 60_000).state; // 30 min later
     expect(soon.pet.happiness).toBe(g.pet.happiness);
+  });
+
+  it("regenerates energy over time (stamina, not a need)", () => {
+    const g = { ...freshGame(), pet: { ...freshGame().pet, energy: 40 } };
+    const later = applyTick(g, T0 + 6 * HOUR).state;
+    expect(later.pet.energy).toBeGreaterThan(40);
+    expect(later.pet.energy).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("critter safari", () => {
+  it("type chart has clear advantages and disadvantages", () => {
+    expect(effectiveness("fire", "leaf")).toBe(2);
+    expect(effectiveness("water", "fire")).toBe(2);
+    expect(effectiveness("leaf", "water")).toBe(2);
+    expect(effectiveness("fire", "water")).toBe(0.5);
+    expect(effectiveness("fire", "fire")).toBe(1);
+  });
+
+  it("super-effective moves hit harder than resisted ones", () => {
+    const rng = () => 0.5;
+    const fire = { id: "ember", name: "Ember", type: "fire" as const, power: 20 };
+    const strong = moveDamage(fire, "leaf", rng).damage;
+    const weak = moveDamage(fire, "water", rng).damage;
+    expect(strong).toBeGreaterThan(weak);
+  });
+
+  it("catch chance rises as HP falls and stays within bounds", () => {
+    const c = critter("sprig")!;
+    const full = catchChance(c, c.maxHp);
+    const low = catchChance(c, 1);
+    expect(low).toBeGreaterThan(full);
+    expect(full).toBeGreaterThanOrEqual(0.05);
+    expect(low).toBeLessThanOrEqual(0.95);
+  });
+
+  it("rarer critters are harder to catch", () => {
+    const common = critter("sprig")!;
+    const mythic = critter("drakeling")!;
+    expect(catchChance(common, 1)).toBeGreaterThan(catchChance(mythic, 1));
+  });
+
+  it("rollWildCritter is deterministic per rng", () => {
+    expect(rollWildCritter(mulberry32(5)).id).toBe(rollWildCritter(mulberry32(5)).id);
+  });
+
+  it("finishSafari adds a caught critter, rewards, and spends energy", () => {
+    const g = { ...freshGame(), pet: { ...freshGame().pet, energy: 100 } };
+    const res = finishSafari(g, { score: safariScore(critter("sprig")!, "caught"), caughtId: "sprig" }, T0);
+    expect(res.state.crittersCaught).toContain("sprig");
+    expect(res.state.coins).toBeGreaterThan(g.coins);
+    expect(res.state.pet.energy).toBe(90); // -10 energy cost
+    expect(res.state.arcade["critter-safari"].highScore).toBe(1);
+  });
+
+  it("finishSafari without a catch still pays out but adds no critter", () => {
+    const g = { ...freshGame(), pet: { ...freshGame().pet, energy: 100 } };
+    const res = finishSafari(g, { score: safariScore(critter("sprig")!, "ko"), caughtId: null }, T0);
+    expect(res.state.crittersCaught.length).toBe(0);
+    expect(res.state.coins).toBeGreaterThan(g.coins);
   });
 });
 

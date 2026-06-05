@@ -36,9 +36,13 @@ the shame mechanics that cause burnout:
 
 Habits generate **energy** you spend on a whole game loop beyond checking boxes:
 
-- **Arcade** — two real mini-games you play *with* your pet: **Treat Catch**
-  (catch falling treats, dodge bombs) and **Pet Says** (Simon-style memory).
-  High scores, energy-gated, with a daily coin cap so it stays balanced.
+- **Arcade** — three real mini-games you play *with* your pet: **Treat Catch**
+  (catch falling treats, dodge bombs), **Pet Says** (Simon-style memory), and
+  **Critter Safari** — an original creature-collector battle: weaken wild
+  critters with type-smart moves, then toss a Capsule to catch them for your
+  **Critter Dex**. High scores, energy-gated, with a daily coin cap.
+- **Energy is stamina, not a chore** — it regenerates over time, so the Play
+  loop is never hard-locked; checking off habits tops it up faster.
 - **Adventures** — send your pet on timed expeditions (15 min → 4 hr) that
   resolve in **real time even while the app is closed** and return with coins
   and randomized **Discoveries** to collect.

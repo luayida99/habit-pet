@@ -38,8 +38,13 @@ export const STREAK_MILESTONES = [3, 7, 14, 30, 50, 100, 200, 365];
 export const DECAY_PER_HOUR = {
   happiness: 2.2,
   health: 1.1,
-  energy: 1.6,
 } as const;
+
+/**
+ * Energy is *stamina*, not a need: it regenerates over time so the Play loop
+ * (games + adventures) is never hard-locked. A full refill takes a few hours.
+ */
+export const ENERGY_REGEN_PER_HOUR = 18;
 
 /** Decay is ignored for the first grace window so quick revisits feel stable. */
 export const DECAY_GRACE_MINUTES = 90;

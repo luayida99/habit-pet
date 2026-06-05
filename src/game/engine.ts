@@ -19,6 +19,7 @@ import {
   COMBO_WINDOW_MS,
   DECAY_GRACE_MINUTES,
   DECAY_PER_HOUR,
+  ENERGY_REGEN_PER_HOUR,
   REWARDS,
   SPECIES,
   STARTER_HABITS,
@@ -38,6 +39,7 @@ import {
 } from "./selectors";
 import { RARITY_META, shopItem } from "./shop";
 import { adventureDef, rollAdventureLoot, discovery } from "./adventures";
+import { critter } from "./critters";
 import { canClaimDaily, nextLoginStreak, rollDailyReward } from "./dailyReward";
 import { EGG_PRICE, isHighRarity, rollGacha } from "./gacha";
 import { miniGameDef, scoreToReward } from "./minigames";
@@ -103,6 +105,7 @@ export function createInitialState(now: number = Date.now()): GameState {
     dailyReward: { lastClaim: null, streak: 0 },
     adventure: null,
     discoveries: [],
+    crittersCaught: [],
     arcade: {},
     gachaPity: 0,
     combo: { count: 0, lastAt: 0 },
@@ -178,7 +181,8 @@ export function applyTick(state: GameState, now: number = Date.now()): Transitio
       ...pet,
       happiness: clampMeter(pet.happiness - hours * DECAY_PER_HOUR.happiness),
       health: clampMeter(pet.health - hours * DECAY_PER_HOUR.health),
-      energy: clampMeter(pet.energy - hours * DECAY_PER_HOUR.energy),
+      // Energy is stamina: it regenerates while you're away.
+      energy: clampMeter(pet.energy + hours * ENERGY_REGEN_PER_HOUR),
     };
   }
 
@@ -635,6 +639,65 @@ export function finishMiniGame(
     evt("coins", `${def.name}: ${score} pts — +${reward.coins}🪙 +${reward.xp}xp`, def.icon),
   ];
   if (isNewHigh && score > 0) events.push(evt("info", "New high score! 🏆", "🏆"));
+
+  const settled = settleProgression(next, now);
+  return { state: settled.state, events: [...events, ...settled.events] };
+}
+
+/**
+ * Finish a Critter Safari encounter: pays out coins/XP (with the daily cap),
+ * spends energy, and adds a newly-caught critter to the dex. The arcade high
+ * score for the safari tracks how many critters you've caught.
+ */
+export function finishSafari(
+  state: GameState,
+  result: { score: number; caughtId: string | null },
+  now: number = Date.now(),
+): Transition {
+  const def = miniGameDef("critter-safari");
+  if (!def) return { state, events: [] };
+  const today = dayKey(now);
+  const prev = state.arcade[def.id] ?? { highScore: 0, lastPlayed: null, coinsToday: 0 };
+  const coinsToday = prev.lastPlayed === today ? prev.coinsToday : 0;
+  const reward = scoreToReward(def, result.score, coinsToday);
+
+  const isNew = result.caughtId != null && !state.crittersCaught.includes(result.caughtId);
+  const crittersCaught = isNew
+    ? [...state.crittersCaught, result.caughtId as string]
+    : state.crittersCaught;
+
+  const next: GameState = grant(
+    {
+      ...state,
+      pet: {
+        ...state.pet,
+        energy: clampMeter(state.pet.energy - def.energyCost),
+        happiness: clampMeter(state.pet.happiness + reward.happiness),
+        lastPlayedAt: now,
+      },
+      crittersCaught,
+      arcade: {
+        ...state.arcade,
+        [def.id]: {
+          highScore: crittersCaught.length,
+          lastPlayed: today,
+          coinsToday: coinsToday + reward.coinsTowardCap,
+        },
+      },
+      stats: { ...state.stats, gamesPlayed: state.stats.gamesPlayed + 1 },
+    },
+    reward.coins,
+    reward.xp,
+  );
+
+  const events: GameEvent[] = [];
+  if (result.caughtId) {
+    const c = critter(result.caughtId);
+    events.push(
+      evt("gacha", `${isNew ? "Caught a new critter" : "Caught"}: ${c?.name ?? "critter"} ${c?.emoji ?? "🎉"}!`, "🔴"),
+    );
+  }
+  events.push(evt("coins", `Safari reward: +${reward.coins}🪙 +${reward.xp}xp`, def.icon));
 
   const settled = settleProgression(next, now);
   return { state: settled.state, events: [...events, ...settled.events] };

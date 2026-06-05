@@ -497,3 +497,34 @@ h1, h2, h3 { margin: 0; }
 .says-pad.lit { opacity: 1; transform: scale(0.97); box-shadow: 0 0 22px currentColor, inset 0 -6px 0 rgba(0,0,0,0.15); }
 .says-pad:disabled { cursor: default; }
 .says-overlay { position: absolute; inset: 0; border-radius: 16px; }
+
+/* ───────────────────────────── critter safari ───────────────────────────── */
+.safari-intro { text-align: center; padding: 8px 4px; }
+.safari-intro-art { font-size: 48px; margin-bottom: 6px; }
+.safari-intro .game-tip { color: var(--ink-soft); }
+.safari-intro .game-best { color: var(--primary); }
+
+.safari-stage { display: flex; flex-direction: column; gap: 10px; padding: 4px; background: linear-gradient(160deg, #d9ffd0, #bff0ff); border-radius: 16px; }
+.safari-stage.shake { animation: shake 0.28s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+.safari-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+.safari-row.enemy { justify-content: space-between; }
+.safari-row.pet { justify-content: flex-start; }
+.safari-critter { font-size: 56px; animation: float 2.2s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+.safari-pet-emoji { font-size: 40px; transform: scaleX(-1); }
+.safari-hpwrap { flex: 1; min-width: 0; }
+.safari-name { font-weight: 800; font-size: 13px; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; color: var(--ink); }
+.type-badge { color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; }
+.hpbar { height: 10px; background: rgba(0,0,0,0.12); border-radius: 6px; overflow: hidden; }
+.hp-fill { height: 100%; background: linear-gradient(90deg, #ff5c72, #ffc24b); transition: width 0.4s ease; }
+.hp-fill.pet { background: linear-gradient(90deg, #34c98a, #7ed957); }
+.safari-log { background: rgba(255,255,255,0.85); border-radius: 12px; padding: 10px 12px; font-weight: 700; font-size: 13.5px; min-height: 40px; display: flex; align-items: center; color: var(--ink); }
+.safari-moves { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.move-btn { color: #fff; font-weight: 800; font-size: 13px; padding: 12px 8px; border-radius: 14px; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.15); transition: transform 0.1s; }
+.move-btn:active { transform: scale(0.96); }
+.capsule-btn { background: #fff; color: var(--ink); border: 2px solid #ff5c72; }
+.capsule-odds { color: var(--muted); font-weight: 700; font-size: 12px; }
+.safari-result { text-align: center; padding: 10px 4px; }
+.safari-result-art { font-size: 52px; }
+.safari-result .game-best { color: var(--ink-soft); }
